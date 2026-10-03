@@ -73,6 +73,20 @@ def open_viewer(parent, note: dict):
 
     _register(note.get("filename", ""), win)
 
-    win.lift()
-    win.focus_force()
+    def _bring_to_front():
+        try:
+            win.lift()
+            win.focus_force()
+        except Exception:
+            pass
+
+    try:
+        # Esperar a que la ventana exista de verdad: enfocar antes del
+        # mapeo falla en silencio y el historial conserva el foco.
+        win.wait_visibility()
+    except Exception:
+        pass
+    _bring_to_front()
+    # Reafirmar tras el ciclo de eventos (el historial no debe re-enfocarse).
+    win.after(150, _bring_to_front)
     return win

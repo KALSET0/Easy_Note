@@ -32,6 +32,35 @@ def set_window_icon(window) -> None:
             window.iconbitmap(str(ico))
     except Exception:
         pass
+    set_window_icons(window)
+
+
+def set_window_icons(window) -> None:
+    """Fija HICON exactos de 16px (esquina) y 32px (barra/Alt+Tab) vía WM_SETICON.
+
+    Sin esto Windows reescala una capa cualquiera y se ve borroso.
+    """
+    try:
+        import ctypes
+
+        from config import resource_path
+
+        ico = resource_path("assets", "icon.ico")
+        if not ico.exists():
+            return
+        user32 = ctypes.windll.user32
+        LR_LOADFROMFILE = 0x10
+        IMAGE_ICON = 1
+        h16 = user32.LoadImageW(None, str(ico), IMAGE_ICON, 16, 16, LR_LOADFROMFILE)
+        h32 = user32.LoadImageW(None, str(ico), IMAGE_ICON, 32, 32, LR_LOADFROMFILE)
+        WM_SETICON, ICON_SMALL, ICON_BIG = 0x80, 0, 1
+        hwnd = window.winfo_id()
+        if h16:
+            user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, h16)
+        if h32:
+            user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, h32)
+    except Exception:
+        pass
 
 
 def apply_rounded_corners(window, round_level: int = 2) -> None:

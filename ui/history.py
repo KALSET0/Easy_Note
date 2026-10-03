@@ -3,13 +3,20 @@
 Los atajos globales (Ctrl+Q / Ctrl+O) se registran UNA sola vez en la
 ventana raíz (EditorApp). Esta ventana NO usa bind_all: hacerlo capturaba
 el atajo con una instancia destruida y rompía la reapertura (bug Ctrl+Q).
+
+Las filas usan widgets tkinter clásicos (no CTk): los eventos de ratón
+(<Button>/<Double>) no son fiables en los canvas internos de CTk.
 """
+import tkinter as tk
 from tkinter import messagebox
 
 import customtkinter as ctk
 
 import storage
 from ui.window_style import DARK_BG, HINT_COLOR, TEXT_COLOR, apply_rounded_corners, set_window_icon
+
+ROW_BG = "#2b2b2b"
+ROW_HOVER_BG = "#3a3a3a"
 
 _history_window = None
 _root = None
@@ -57,14 +64,25 @@ class HistoryWindow(ctk.CTkToplevel):
         except Exception:
             pass
 
+        # Barra superior: búsqueda + botón de actualización manual.
+        # (Sin auto-refresh por FocusIn: reconstruir las filas con el foco
+        # dentro destruía los widgets a mitad del clic: parpadeo, doble-clic
+        # y botón eliminar muertos.)
+        topbar = ctk.CTkFrame(self, fg_color="transparent")
+        topbar.pack(fill="x", padx=14, pady=(14, 8))
         self.search = ctk.CTkEntry(
-            self,
+            topbar,
             corner_radius=12,
             placeholder_text="Buscar por título o fecha/hora…",
             font=("Segoe UI", 13),
         )
-        self.search.pack(fill="x", padx=14, pady=(14, 8))
+        self.search.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.search.bind("<KeyRelease>", lambda e: self.refresh())
+        ctk.CTkButton(
+            topbar, text="⟳", width=36, height=32, corner_radius=10,
+            fg_color="#2b2b2b", hover_color="#3a3a3a",
+            font=("Segoe UI", 16), command=self.refresh,
+        ).pack(side="right")
 
         self.list_frame = ctk.CTkScrollableFrame(self, corner_radius=8, fg_color="#212121")
         self.list_frame.pack(fill="both", expand=True, padx=14, pady=(0, 6))
@@ -72,7 +90,6 @@ class HistoryWindow(ctk.CTkToplevel):
         self.status = ctk.CTkLabel(self, text="", text_color=HINT_COLOR, font=("Segoe UI", 11))
         self.status.pack(pady=(0, 10))
 
-        self.bind("<FocusIn>", lambda e: self.refresh())
         # Respaldo: si la ventana se destruye por cualquier vía, limpiar el singleton.
         self.bind("<Destroy>", self._on_destroy, add="+")
 
@@ -114,7 +131,7 @@ class HistoryWindow(ctk.CTkToplevel):
         self.status.configure(text=f"{len(notes)}/{total} notas • doble clic para leer")
 
     def _add_row(self, note: dict) -> None:
-        row = ctk.CTkFrame(self.list_frame, corner_radius=10, fg_color="#2b2b2b")
+        row = tk.Frame(self.list_frame, bg=ROW_BG, cursor="hand2")
         row.pack(fill="x", padx=6, pady=4)
 
         title = note.get("title", note.get("filename", ""))
@@ -122,27 +139,42 @@ class HistoryWindow(ctk.CTkToplevel):
         if note.get("is_pending"):
             title = f"○ {title}"
 
-        lbl_title = ctk.CTkLabel(
-            row, text=title, anchor="w", text_color=TEXT_COLOR,
+        lbl_title = tk.Label(
+            row, text=title, anchor="w", bg=ROW_BG, fg=TEXT_COLOR,
             font=("Segoe UI", 13, "bold"), wraplength=360, justify="left",
+            cursor="hand2",
         )
         lbl_title.pack(side="left", fill="x", expand=True, padx=(12, 6), pady=10)
 
         # Botón eliminar a la derecha del todo (consume su propio clic,
         # no interfiere con el doble-clic de la fila).
-        btn_del = ctk.CTkButton(
-            row, text="✕", width=28, height=28, corner_radius=8,
-            fg_color="transparent", hover_color="#5a2b2b",
-            text_color=HINT_COLOR, font=("Segoe UI", 13, "bold"),
+        btn_del = tk.Button(
+            row, text="✕", font=("Segoe UI", 12, "bold"),
+            bg=ROW_BG, fg=HINT_COLOR, activebackground="#5a2b2b",
+            activeforeground="#ffffff", bd=0, relief="flat", width=3,
+            cursor="hand2",
             command=lambda n=note: self._confirm_delete(n),
         )
-        btn_del.pack(side="right", padx=(0, 8), pady=10)
+        btn_del.pack(side="right", padx=(0, 8), pady=6)
 
-        lbl_ts = ctk.CTkLabel(row, text=ts, anchor="e", text_color=HINT_COLOR, font=("Segoe UI", 12))
+        lbl_ts = tk.Label(row, text=ts, anchor="e", bg=ROW_BG, fg=HINT_COLOR,
+                          font=("Segoe UI", 12), cursor="hand2")
         lbl_ts.pack(side="right", padx=(6, 4), pady=10)
 
         for w in (row, lbl_title, lbl_ts):
             w.bind("<Double-Button-1>", lambda e, n=note: self._open_viewer(n))
+            w.bind("<Enter>", lambda e, r=row: self._row_hover(r, True))
+            w.bind("<Leave>", lambda e, r=row: self._row_hover(r, False))
+
+    def _row_hover(self, row, inside: bool) -> None:
+        try:
+            bg = ROW_HOVER_BG if inside else ROW_BG
+            row.configure(bg=bg)
+            for c in row.winfo_children():
+                if c.winfo_class() == "Label":
+                    c.configure(bg=bg)
+        except Exception:
+            pass
 
     def _confirm_delete(self, note: dict) -> None:
         import ui.viewer as viewer_mod

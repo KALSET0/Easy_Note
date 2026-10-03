@@ -1,3 +1,4 @@
 customtkinter>=5.2
 ollama>=0.4
 requests>=2.31
+pyinstaller>=6  # solo para compilar el .exe (build_exe.ps1)

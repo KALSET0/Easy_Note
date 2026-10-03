@@ -14,7 +14,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-O usa el ejecutable `dist\Easy Note.exe` (ver `build_exe.ps1`) con su acceso directo del escritorio: icono propio en la barra de tareas y proceso "Easy Note" en el Administrador de tareas.
+O usa el ejecutable `dist\Easy Note\Easy Note.exe` (ver `build_exe.ps1`, compilado con Python python.org en modo onedir) con su acceso directo del escritorio: icono propio en la barra de tareas y proceso "Easy Note" en el Administrador de tareas.
 
 ## Atajos
 
