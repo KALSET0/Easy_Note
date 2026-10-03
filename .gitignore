@@ -226,3 +226,6 @@ notes_index.lock
 
 # Launcher local (no versionado, cada equipo usa el suyo)
 Easy_Note.bat
+
+# venv local de compilacion (build_exe.ps1)
+.venv-build/
