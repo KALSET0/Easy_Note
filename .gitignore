@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Easy_Note local data — las notas crudas van en /notas/*.txt, el índice es local
+/notas/
+notes_index.json
+notes_index.lock
