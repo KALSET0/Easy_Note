@@ -219,7 +219,10 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Easy_Note local data — las notas crudas van en /notas/*.txt, el índice es local
+# Easy Note local data — las notas crudas van en /notas/*.txt, el índice es local
 /notas/
 notes_index.json
 notes_index.lock
+
+# Launcher local (no versionado, cada equipo usa el suyo)
+Easy_Note.bat

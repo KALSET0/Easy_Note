@@ -110,9 +110,16 @@ def ping_ollama(timeout: float = 1.5) -> bool:
         return False
 
 
+def _worker_cmd(filename: str) -> list[str]:
+    """Comando del worker: integrado (--worker) si frozen, script si dev."""
+    if getattr(sys, "frozen", False):
+        return [sys.executable, "--worker", filename]
+    worker = str(Path(__file__).resolve())
+    return [sys.executable, worker, filename]
+
+
 def launch_ai_background(filename: str) -> None:
     """Lanza el worker detached que sobrevive al cierre. Fallback a hilo daemon."""
-    worker = str(Path(__file__).resolve())
     try:
         kwargs: dict = {
             "stdout": subprocess.DEVNULL,
@@ -125,7 +132,7 @@ def launch_ai_background(filename: str) -> None:
             kwargs["creationflags"] = 0x00000008 | 0x00000200
         else:
             kwargs["start_new_session"] = True
-        subprocess.Popen([sys.executable, worker, filename], **kwargs)
+        subprocess.Popen(_worker_cmd(filename), **kwargs)
     except Exception:
         t = threading.Thread(target=process_note_file, args=(filename,), daemon=True)
         t.start()

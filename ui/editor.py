@@ -7,7 +7,7 @@ import customtkinter as ctk
 
 import storage
 from ai_worker import launch_ai_background
-from ui.window_style import DARK_BG, HINT_COLOR, TEXT_COLOR, apply_rounded_corners
+from ui.window_style import DARK_BG, HINT_COLOR, TEXT_COLOR, apply_rounded_corners, set_window_icon
 
 
 def open_notes_folder() -> None:
@@ -30,17 +30,20 @@ def open_notes_folder() -> None:
 def open_history_from(widget) -> None:
     from ui.history import open_or_focus_history
 
-    root = widget.winfo_toplevel()
-    open_or_focus_history(root)
+    open_or_focus_history(widget.winfo_toplevel())
 
 
 class EditorApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("Easy_Note")
+        from ui.history import set_history_root
+
+        set_history_root(self)
+        self.title("Easy Note")
         self.geometry("800x600")
         self.minsize(480, 360)
         self.configure(fg_color=DARK_BG)
+        set_window_icon(self)
         try:
             self.after(100, lambda: apply_rounded_corners(self))
         except Exception:

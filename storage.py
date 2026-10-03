@@ -163,6 +163,37 @@ def read_raw_content(filename: str) -> str:
         return ""
 
 
+def delete_note(filename: str) -> bool:
+    """Borra la nota completa: crudo en /notas + entrada IA del índice.
+
+    Devuelve True si eliminó algo, False si no existía nada.
+    Rechaza nombres con rutas (solo basename *.txt dentro de /notas).
+    """
+    if not filename or not isinstance(filename, str):
+        return False
+    base = os.path.basename(filename)
+    if base != filename or not base.endswith(".txt"):
+        return False
+    removed = False
+    try:
+        raw_path = config.NOTAS_DIR / base
+        if raw_path.is_file():
+            raw_path.unlink()
+            removed = True
+    except OSError:
+        pass
+    lock = _acquire_lock()
+    try:
+        entries = load_index()
+        kept = [e for e in entries if e.get("filename") != base]
+        if len(kept) != len(entries):
+            removed = True
+            _save_index_atomic(kept)
+    finally:
+        _release_lock(lock)
+    return removed
+
+
 def get_display_content(note: dict) -> str:
     """Contenido para el visor: versión IA si existe, si no el crudo."""
     if note.get("cleaned_content"):

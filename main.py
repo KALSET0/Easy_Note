@@ -1,9 +1,14 @@
-"""Easy_Note — punto de entrada principal. `python main.py`."""
+"""Easy Note — punto de entrada principal. `python main.py`.
+
+En el ejecutable PyInstaller el worker IA va integrado:
+`Easy Note.exe --worker <filename>` procesa una nota y sale.
+"""
+import sys
 import threading
 
 from ai_worker import launch_ai_background, ping_ollama
 import storage
-from ui.window_style import apply_theme
+from ui.window_style import apply_theme, set_app_id
 
 
 def reconcile_pendings_async() -> None:
@@ -24,6 +29,12 @@ def reconcile_pendings_async() -> None:
 
 
 def main() -> None:
+    if len(sys.argv) >= 2 and sys.argv[1] == "--worker":
+        from ai_worker import main as worker_main
+
+        filename = sys.argv[2] if len(sys.argv) >= 3 else ""
+        raise SystemExit(worker_main(["worker", filename]))
+    set_app_id("EasyNote.App")
     apply_theme()
     storage.ensure_dirs()
     reconcile_pendings_async()

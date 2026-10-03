@@ -1,9 +1,23 @@
-# Easy_Note — configuración central
+# Easy Note — configuración central
+import sys
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+if getattr(sys, "frozen", False):
+    # Ejecutable PyInstaller: datos junto al .exe
+    BASE_DIR = Path(sys.executable).resolve().parent
+else:
+    BASE_DIR = Path(__file__).resolve().parent
 NOTAS_DIR = BASE_DIR / "notas"
 INDEX_PATH = BASE_DIR / "notes_index.json"
+
+
+def resource_path(*parts: str) -> Path:
+    """Ruta a recursos empaquetados (assets en _MEIPASS si frozen)."""
+    if getattr(sys, "frozen", False):
+        base = Path(getattr(sys, "_MEIPASS", BASE_DIR))
+    else:
+        base = BASE_DIR
+    return base.joinpath(*parts)
 
 # IA local (Ollama)
 MODEL = "qwen2.5:7b-instruct-q4_K_M"

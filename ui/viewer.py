@@ -1,8 +1,38 @@
-"""Ventana C — Visor Read-Only (doble clic en historial)."""
+"""Ventana C — Visor Read-Only (doble clic en historial).
+
+No registra atajos: Ctrl+Q / Ctrl+O viven solo en la raíz (ver ui/history.py).
+"""
 import customtkinter as ctk
 
 import storage
-from ui.window_style import DARK_BG, HINT_COLOR, TEXT_COLOR, apply_rounded_corners
+from ui.window_style import DARK_BG, HINT_COLOR, TEXT_COLOR, apply_rounded_corners, set_window_icon
+
+_open_viewers: dict[str, list] = {}
+
+
+def close_viewers_for(filename: str) -> None:
+    """Cierra los visores abiertos de una nota (usado al eliminarla)."""
+    for win in list(_open_viewers.get(filename or "", [])):
+        try:
+            win.destroy()
+        except Exception:
+            pass
+
+
+def _register(filename: str, win) -> None:
+    _open_viewers.setdefault(filename or "", []).append(win)
+
+    def _on_destroy(event):
+        if event.widget is win:
+            lst = _open_viewers.get(filename or "", [])
+            try:
+                lst.remove(win)
+            except ValueError:
+                pass
+            if not lst:
+                _open_viewers.pop(filename or "", None)
+
+    win.bind("<Destroy>", _on_destroy, add="+")
 
 
 def open_viewer(parent, note: dict):
@@ -11,6 +41,7 @@ def open_viewer(parent, note: dict):
     win.geometry("680x520")
     win.minsize(480, 360)
     win.configure(fg_color=DARK_BG)
+    set_window_icon(win)
     try:
         win.after(100, lambda: apply_rounded_corners(win))
     except Exception:
@@ -40,17 +71,7 @@ def open_viewer(parent, note: dict):
     box.insert("1.0", storage.get_display_content(note))
     box.configure(state="disabled")  # RESTRICCIÓN: solo lectura, sin edición
 
-    # Atajos globales también aquí (Ctrl+S no se toca: solo el editor guarda)
-    try:
-        from ui.editor import open_notes_folder
-        from ui.history import open_or_focus_history
-
-        win.bind_all("<Control-q>", lambda e: (open_or_focus_history(win), "break")[1])
-        win.bind_all("<Control-Q>", lambda e: (open_or_focus_history(win), "break")[1])
-        win.bind_all("<Control-o>", lambda e: (open_notes_folder(), "break")[1])
-        win.bind_all("<Control-O>", lambda e: (open_notes_folder(), "break")[1])
-    except Exception:
-        pass
+    _register(note.get("filename", ""), win)
 
     win.lift()
     win.focus_force()

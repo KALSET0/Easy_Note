@@ -12,6 +12,28 @@ def apply_theme() -> None:
     ctk.set_default_color_theme("dark-blue")
 
 
+def set_app_id(app_id: str = "EasyNote.App") -> None:
+    """Fija el AppUserModelID para agrupar bien el icono en la barra de tareas."""
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+    except Exception:
+        pass
+
+
+def set_window_icon(window) -> None:
+    """Aplica assets/icon.ico a la ventana (botón de barra de tareas)."""
+    try:
+        from config import resource_path
+
+        ico = resource_path("assets", "icon.ico")
+        if ico.exists():
+            window.iconbitmap(str(ico))
+    except Exception:
+        pass
+
+
 def apply_rounded_corners(window, round_level: int = 2) -> None:
     """Fuerza esquinas redondeadas en Windows 11 vía DWM. Degrada en silencio.
 
